@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>To-Do List | PaaS dengan Vercel</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-badge">☁️ Cloud Computing · PaaS · Vercel</div>
+      <h1 class="title">My <span class="accent">Tasks</span></h1>
+      <p class="subtitle">Aplikasi To-Do List sederhana · Tugas Cloud Computing</p>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-num" id="totalCount">0</span>
+        <span class="stat-label">Total Tugas</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num" id="doneCount">0</span>
+        <span class="stat-label">Selesai</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num" id="pendingCount">0</span>
+        <span class="stat-label">Belum Selesai</span>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-card">
+      <div class="input-row">
+        <input
+          type="text"
+          id="taskInput"
+          class="task-input"
+          placeholder="Tambahkan tugas baru..."
+          maxlength="100"
+          autocomplete="off"
+        />
+        <button class="add-btn" onclick="addTask()" id="addBtn">
+          <span class="btn-icon">+</span>
+          <span class="btn-text">Tambah</span>
+        </button>
+      </div>
+      <div class="input-hint" id="inputHint">Tekan Enter atau klik Tambah</div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterTasks('all')" id="filter-all">Semua</button>
+      <button class="filter-btn" onclick="filterTasks('pending')" id="filter-pending">Belum Selesai</button>
+      <button class="filter-btn" onclick="filterTasks('done')" id="filter-done">Selesai</button>
+    </div>
+
+    <!-- Task List -->
+    <div class="task-list" id="taskList">
+      <!-- Tasks will be rendered here -->
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <p class="empty-title">Belum ada tugas</p>
+      <p class="empty-sub">Tambahkan tugas pertama kamu di atas!</p>
+    </div>
+
+    <!-- Clear All Button -->
+    <div class="bottom-bar" id="bottomBar" style="display:none">
+      <button class="clear-btn" onclick="clearCompleted()">🗑️ Hapus Tugas Selesai</button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>☁️ Deployed via <strong>Vercel</strong> · Platform as a Service (PaaS)</p>
+      <p class="footer-sub">Tugas Cloud Computing · Universitas</p>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
