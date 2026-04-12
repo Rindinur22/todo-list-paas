@@ -1,98 +1,861 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>To-Do List | PaaS dengan Vercel</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Taskly — To-Do List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #0c0c0f;
+  color: #e8e6e1;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ============================================================
+   NOISE TEXTURE OVERLAY
+   ============================================================ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ============================================================
+   ANIMATED BACKGROUND BLOB
+   ============================================================ */
+.bg-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  animation: blobFloat 12s ease-in-out infinite;
+}
+.bg-blob-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(232,197,145,0.12) 0%, transparent 70%);
+  top: -200px; right: -100px;
+  animation-delay: 0s;
+}
+.bg-blob-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(180,160,220,0.08) 0%, transparent 70%);
+  bottom: 0; left: -100px;
+  animation-delay: -6s;
+}
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(20px, -30px) scale(1.05); }
+  66%       { transform: translate(-15px, 20px) scale(0.97); }
+}
+
+/* ============================================================
+   LAYOUT WRAPPER
+   ============================================================ */
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 0;
+  margin-bottom: 64px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon {
+  width: 34px; height: 34px;
+  border: 1px solid rgba(232,197,145,0.3);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(232,197,145,0.06);
+}
+.brand-icon svg { width: 16px; height: 16px; }
+
+.brand-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  letter-spacing: -0.3px;
+  color: #e8e6e1;
+}
+
+.topbar-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: rgba(232,230,225,0.5);
+  background: rgba(255,255,255,0.03);
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #6ee7b7;
+  animation: livePulse 2.5s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(110,231,183,0.4); }
+  50%      { opacity: 0.6; box-shadow: 0 0 0 4px rgba(110,231,183,0); }
+}
+
+/* ============================================================
+   HERO SECTION
+   ============================================================ */
+.hero {
+  margin-bottom: 56px;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(232,197,145,0.7);
+  margin-bottom: 20px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 20px; height: 1px;
+  background: rgba(232,197,145,0.5);
+}
+
+.hero-heading {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(42px, 7vw, 72px);
+  line-height: 1.0;
+  letter-spacing: -2px;
+  color: #f0ede8;
+  margin-bottom: 20px;
+}
+.hero-heading em {
+  font-style: italic;
+  color: rgba(232,197,145,0.85);
+}
+
+.hero-sub {
+  font-size: 15px;
+  font-weight: 300;
+  color: rgba(232,230,225,0.45);
+  line-height: 1.7;
+  max-width: 440px;
+}
+
+/* ============================================================
+   STATS STRIP
+   ============================================================ */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+
+.stat-block {
+  background: rgba(255,255,255,0.02);
+  padding: 20px 24px;
+  transition: background 0.2s;
+}
+.stat-block:hover { background: rgba(255,255,255,0.04); }
+
+.stat-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 36px;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: #f0ede8;
+  transition: color 0.3s;
+}
+.stat-block.s-done .stat-num { color: #6ee7b7; }
+.stat-block.s-active .stat-num { color: rgba(232,197,145,0.9); }
+
+.stat-lbl {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(232,230,225,0.3);
+}
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+.progress-section {
+  margin-bottom: 32px;
+  display: none;
+}
+.progress-section.visible { display: block; }
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: rgba(232,230,225,0.35);
+}
+.progress-pct {
+  font-family: 'DM Serif Display', serif;
+  font-size: 14px;
+  color: rgba(232,230,225,0.6);
+}
+
+.progress-track {
+  height: 2px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: visible;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(232,197,145,0.6) 0%, #6ee7b7 100%);
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -1px; top: 50%;
+  transform: translateY(-50%);
+  width: 6px; height: 6px;
+  background: #6ee7b7;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(110,231,183,0.6);
+}
+
+/* ============================================================
+   INPUT AREA
+   ============================================================ */
+.input-area {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+  position: relative;
+}
+
+.task-input {
+  flex: 1;
+  height: 52px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 0 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  color: #e8e6e1;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+}
+.task-input::placeholder {
+  color: rgba(232,230,225,0.2);
+}
+.task-input:focus {
+  border-color: rgba(232,197,145,0.35);
+  background: rgba(232,197,145,0.04);
+  box-shadow: 0 0 0 3px rgba(232,197,145,0.06);
+}
+
+.add-btn {
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(232,197,145,0.25);
+  background: rgba(232,197,145,0.08);
+  color: rgba(232,197,145,0.9);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+}
+.add-btn:hover {
+  background: rgba(232,197,145,0.14);
+  border-color: rgba(232,197,145,0.4);
+  transform: translateY(-1px);
+}
+.add-btn:active { transform: scale(0.97); }
+
+.add-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ============================================================
+   FILTER ROW
+   ============================================================ */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: transparent;
+  color: rgba(232,230,225,0.35);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 0.1px;
+}
+.filter-chip:hover {
+  color: rgba(232,230,225,0.7);
+  border-color: rgba(255,255,255,0.14);
+}
+.filter-chip.active {
+  background: rgba(232,197,145,0.1);
+  border-color: rgba(232,197,145,0.3);
+  color: rgba(232,197,145,0.9);
+  font-weight: 500;
+}
+
+.fr-spacer { flex: 1; }
+
+.clear-chip {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 100px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(232,230,225,0.2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.clear-chip:hover {
+  color: rgba(239,107,107,0.7);
+  border-color: rgba(239,107,107,0.2);
+}
+
+/* ============================================================
+   SECTION DIVIDER
+   ============================================================ */
+.list-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.list-header-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.05);
+}
+.list-header-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(232,230,225,0.2);
+}
+
+/* ============================================================
+   TASK LIST
+   ============================================================ */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ============================================================
+   TASK ITEM
+   ============================================================ */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  height: 62px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 12px;
+  transition: background 0.18s, border-color 0.18s, opacity 0.25s;
+  animation: taskIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+  overflow: hidden;
+}
+@keyframes taskIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.task-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: transparent;
+  border-radius: 2px 0 0 2px;
+  transition: background 0.2s;
+}
+
+.task-item:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.09);
+}
+.task-item:hover::before {
+  background: rgba(232,197,145,0.4);
+}
+
+.task-item.is-done {
+  opacity: 0.35;
+}
+.task-item.is-done::before {
+  background: rgba(110,231,183,0.5);
+}
+
+/* checkbox */
+.chk {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  position: relative;
+}
+.chk:hover { border-color: rgba(110,231,183,0.5); background: rgba(110,231,183,0.05); }
+.chk.done {
+  background: rgba(110,231,183,0.12);
+  border-color: rgba(110,231,183,0.5);
+}
+.chk.done svg { opacity: 1; }
+.chk svg {
+  width: 10px; height: 10px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+/* text */
+.task-txt {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 400;
+  color: #e8e6e1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.is-done .task-txt {
+  text-decoration: line-through;
+  color: rgba(232,230,225,0.3);
+}
+
+/* time */
+.task-time {
+  font-size: 11px;
+  color: rgba(232,230,225,0.2);
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+/* delete btn */
+.del {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(232,230,225,0.15);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.del:hover {
+  background: rgba(239,107,107,0.1);
+  color: rgba(239,107,107,0.7);
+}
+.del svg { width: 13px; height: 13px; }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty-state {
+  padding: 72px 0;
+  text-align: center;
+}
+.empty-glyph {
+  width: 56px; height: 56px;
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  margin-bottom: 18px;
+}
+.empty-glyph svg { width: 22px; height: 22px; opacity: 0.2; }
+.empty-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: rgba(232,230,225,0.3);
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.empty-hint {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(232,230,225,0.18);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.page-footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: rgba(232,230,225,0.2);
+  font-weight: 300;
+}
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vercel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 100px;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  color: rgba(232,230,225,0.3);
+}
+.v-tri {
+  width: 10px; height: 10px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 480px) {
+  .page { padding: 0 16px 80px; }
+  .hero-heading { font-size: 38px; letter-spacing: -1.5px; }
+  .add-btn span { display: none; }
+  .add-btn { padding: 0 16px; }
+  .stats-strip { grid-template-columns: repeat(3,1fr); }
+  .stat-num { font-size: 28px; }
+  .stat-block { padding: 16px 14px; }
+}
+
+</style>
 </head>
 <body>
 
-  <div class="bg-blobs">
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    <div class="blob blob-3"></div>
+<!-- BACKGROUND -->
+<div class="bg-blob bg-blob-1" aria-hidden="true"></div>
+<div class="bg-blob bg-blob-2" aria-hidden="true"></div>
+
+<div class="page">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 16 16" fill="none" stroke="rgba(232,197,145,0.8)" stroke-width="1.4" stroke-linecap="round">
+          <path d="M2.5 4h11M2.5 8h7M2.5 12h9"/>
+        </svg>
+      </div>
+      <span class="brand-name">Taskly</span>
+    </div>
+    <div class="topbar-pill">
+      <span class="live-dot"></span>
+      Hosted on Vercel
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">PaaS · Cloud Computing</div>
+    <h1 class="hero-heading">
+      Tugas.<br/>
+      <em>Cloud.</em><br/>
+      Computing.
+    </h1>
+    <p class="hero-sub">Aplikasi to-do list yang di-deploy via Vercel — bukti nyata implementasi Platform as a Service dalam cloud computing.</p>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stat-block">
+      <div class="stat-num" id="sTotal">0</div>
+      <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat-block s-active">
+      <div class="stat-num" id="sActive">0</div>
+      <div class="stat-lbl">Aktif</div>
+    </div>
+    <div class="stat-block s-done">
+      <div class="stat-num" id="sDone">0</div>
+      <div class="stat-lbl">Selesai</div>
+    </div>
   </div>
 
-  <div class="container">
-
-    <!-- Header -->
-    <header class="header">
-      <div class="header-badge">☁️ Cloud Computing · PaaS · Vercel</div>
-      <h1 class="title">My <span class="accent">Tasks</span></h1>
-      <p class="subtitle">Aplikasi To-Do List sederhana · Tugas Cloud Computing</p>
-    </header>
-
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-      <div class="stat">
-        <span class="stat-num" id="totalCount">0</span>
-        <span class="stat-label">Total Tugas</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat">
-        <span class="stat-num" id="doneCount">0</span>
-        <span class="stat-label">Selesai</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat">
-        <span class="stat-num" id="pendingCount">0</span>
-        <span class="stat-label">Belum Selesai</span>
-      </div>
+  <!-- PROGRESS BAR -->
+  <div class="progress-section" id="progressSec">
+    <div class="progress-meta">
+      <span>Progress penyelesaian</span>
+      <span class="progress-pct" id="pPct">0%</span>
     </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="pFill" style="width:0%"></div>
+    </div>
+  </div>
 
-    <!-- Input Area -->
-    <div class="input-card">
-      <div class="input-row">
-        <input
-          type="text"
-          id="taskInput"
-          class="task-input"
-          placeholder="Tambahkan tugas baru..."
-          maxlength="100"
-          autocomplete="off"
-        />
-        <button class="add-btn" onclick="addTask()" id="addBtn">
-          <span class="btn-icon">+</span>
-          <span class="btn-text">Tambah</span>
+  <!-- INPUT -->
+  <div class="input-area">
+    <input
+      id="inp"
+      class="task-input"
+      type="text"
+      placeholder="Tambah tugas baru…  (tekan Enter)"
+      maxlength="120"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="add-btn" id="addBtn" onclick="addTask()">
+      <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M6.5 1v11M1 6.5h11"/>
+      </svg>
+      <span>Tambah</span>
+    </button>
+  </div>
+
+  <!-- FILTER -->
+  <div class="filter-row">
+    <button class="filter-chip active" onclick="setFilter('all',this)">Semua</button>
+    <button class="filter-chip"        onclick="setFilter('active',this)">Aktif</button>
+    <button class="filter-chip"        onclick="setFilter('done',this)">Selesai</button>
+    <span class="fr-spacer"></span>
+    <button class="clear-chip"         onclick="clearDone()">Hapus selesai</button>
+  </div>
+
+  <!-- LIST HEADER -->
+  <div class="list-header">
+    <div class="list-header-line"></div>
+    <div class="list-header-label" id="listLabel">Daftar Tugas</div>
+    <div class="list-header-line"></div>
+  </div>
+
+  <!-- TASK LIST -->
+  <div class="task-list" id="list" role="list"></div>
+
+  <!-- FOOTER -->
+  <footer class="page-footer">
+    <span>Dibuat dengan HTML · CSS · JavaScript</span>
+    <div class="footer-right">
+      <span class="vercel-badge">
+        <svg class="v-tri" viewBox="0 0 76 65" fill="rgba(232,230,225,0.5)">
+          <path d="M37.9 0L75.8 65H0z"/>
+        </svg>
+        Vercel PaaS
+      </span>
+    </div>
+  </footer>
+
+</div><!-- /page -->
+
+<script>
+  /* ── STATE ── */
+  let tasks  = JSON.parse(localStorage.getItem('taskly2') || '[]');
+  let filter = 'all';
+
+  /* ── UTILS ── */
+  const $ = id => document.getElementById(id);
+  const esc = s => s
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const now = () => new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  const save = () => localStorage.setItem('taskly2', JSON.stringify(tasks));
+
+  /* ── ADD ── */
+  function addTask() {
+    const inp = $('inp');
+    const txt = inp.value.trim();
+    if (!txt) {
+      inp.style.borderColor = 'rgba(239,107,107,0.5)';
+      inp.style.boxShadow   = '0 0 0 3px rgba(239,107,107,0.08)';
+      setTimeout(() => { inp.style.borderColor=''; inp.style.boxShadow=''; }, 700);
+      inp.focus();
+      return;
+    }
+    tasks.unshift({ id: Date.now(), text: txt, done: false, time: now() });
+    inp.value = '';
+    save(); render(); inp.focus();
+  }
+
+  /* ── TOGGLE ── */
+  function toggle(id) {
+    tasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+    save(); render();
+  }
+
+  /* ── DELETE ── */
+  function remove(id) {
+    const el = document.querySelector(`[data-id="${id}"]`);
+    if (el) {
+      el.style.transition = 'opacity .2s ease, transform .2s ease';
+      el.style.opacity    = '0';
+      el.style.transform  = 'translateX(16px)';
+      setTimeout(() => {
+        tasks = tasks.filter(t => t.id !== id);
+        save(); render();
+      }, 210);
+    }
+  }
+
+  /* ── CLEAR DONE ── */
+  function clearDone() {
+    tasks = tasks.filter(t => !t.done);
+    save(); render();
+  }
+
+  /* ── FILTER ── */
+  function setFilter(f, btn) {
+    filter = f;
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  /* ── RENDER ── */
+  function render() {
+    const total  = tasks.length;
+    const done   = tasks.filter(t => t.done).length;
+    const active = total - done;
+
+    /* stats */
+    $('sTotal').textContent  = total;
+    $('sActive').textContent = active;
+    $('sDone').textContent   = done;
+
+    /* progress */
+    const pct = total ? Math.round(done / total * 100) : 0;
+    $('progressSec').classList.toggle('visible', total > 0);
+    $('pPct').textContent      = pct + '%';
+    $('pFill').style.width     = pct + '%';
+
+    /* visible tasks */
+    let vis = tasks;
+    if (filter === 'active') vis = tasks.filter(t => !t.done);
+    if (filter === 'done')   vis = tasks.filter(t => t.done);
+
+    /* list label */
+    const labels = { all: 'Semua Tugas', active: 'Belum Selesai', done: 'Sudah Selesai' };
+    $('listLabel').textContent = labels[filter];
+
+    /* empty state */
+    const list = $('list');
+    if (!vis.length) {
+      const [title, hint] = {
+        all:    ['Belum ada tugas', 'Tulis sesuatu dan tekan Tambah'],
+        active: ['Semua sudah selesai 🎉', 'Tidak ada tugas yang tersisa'],
+        done:   ['Belum ada yang selesai', 'Mulai centang tugasmu'],
+      }[filter];
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-glyph">
+            <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+              <path d="M4 6h14M4 11h9M4 16h11"/>
+            </svg>
+          </div>
+          <div class="empty-title">${title}</div>
+          <div class="empty-hint">${hint}</div>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = vis.map(t => `
+      <div class="task-item${t.done ? ' is-done' : ''}" data-id="${t.id}" role="listitem">
+        <div class="chk${t.done ? ' done' : ''}"
+             onclick="toggle(${t.id})"
+             title="${t.done ? 'Tandai belum selesai' : 'Tandai selesai'}"
+             role="checkbox" aria-checked="${t.done}">
+          <svg viewBox="0 0 10 10" fill="none" stroke="#6ee7b7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1.5 5.5L4 8L8.5 2"/>
+          </svg>
+        </div>
+        <span class="task-txt" title="${esc(t.text)}">${esc(t.text)}</span>
+        <span class="task-time">${t.time}</span>
+        <button class="del" onclick="remove(${t.id})" title="Hapus tugas" aria-label="Hapus tugas">
+          <svg viewBox="0 0 13 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <path d="M1.5 3.5h10M4 3.5V2.5h5v1M4.5 6.5v4M8.5 6.5v4M2.5 3.5l.8 8h6.4l.8-8"/>
+          </svg>
         </button>
-      </div>
-      <div class="input-hint" id="inputHint">Tekan Enter atau klik Tambah</div>
-    </div>
+      </div>`).join('');
+  }
 
-    <!-- Filter Buttons -->
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="filterTasks('all')" id="filter-all">Semua</button>
-      <button class="filter-btn" onclick="filterTasks('pending')" id="filter-pending">Belum Selesai</button>
-      <button class="filter-btn" onclick="filterTasks('done')" id="filter-done">Selesai</button>
-    </div>
+  /* ── KEYBOARD ── */
+  $('inp').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
-    <!-- Task List -->
-    <div class="task-list" id="taskList">
-      <!-- Tasks will be rendered here -->
-    </div>
-
-    <!-- Empty State -->
-    <div class="empty-state" id="emptyState">
-      <div class="empty-icon">📋</div>
-      <p class="empty-title">Belum ada tugas</p>
-      <p class="empty-sub">Tambahkan tugas pertama kamu di atas!</p>
-    </div>
-
-    <!-- Clear All Button -->
-    <div class="bottom-bar" id="bottomBar" style="display:none">
-      <button class="clear-btn" onclick="clearCompleted()">🗑️ Hapus Tugas Selesai</button>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <p>☁️ Deployed via <strong>Vercel</strong> · Platform as a Service (PaaS)</p>
-      <p class="footer-sub">Tugas Cloud Computing · Universitas</p>
-    </footer>
-
-  </div>
-
-  <script src="app.js"></script>
+  /* ── INIT ── */
+  render();
+</script>
 </body>
 </html>
